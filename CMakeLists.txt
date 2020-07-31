@@ -32,6 +32,6 @@ add_executable (${PROJECT_NAME}
         src/graphics/GL_Debug.cpp
         src/graphics/GL_Debug.h
         src/Configs.h
-        src/Timer.cpp src/graphics/ComputeShader.cpp src/graphics/ComputeShader.h)
+        src/Timer.cpp src/graphics/ComputeShader.cpp src/graphics/ComputeShader.h src/Octree.cpp src/Octree.h src/graphics/StorageBuffer.cpp src/graphics/StorageBuffer.h)
 
 target_link_libraries(${PROJECT_NAME} glm glfw glad FastNoise)
