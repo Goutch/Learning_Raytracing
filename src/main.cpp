@@ -145,14 +145,14 @@ int main() {
 
     return 0;*/
 
-    Octree octree(vec3(0));
-    int depth = 3;
+    Octree octree(0);
+    int depth = 5;
     int range = (pow(2, depth));
     Clock clock;
     for (int x = 0; x < range; ++x) {
         for (int y = 0; y < range; ++y) {
             for (int z = 0; z < range; ++z) {
-                octree.insert(vec3(0), x, y, z, depth);
+                octree.insert(1, x, y, z, depth);
             }
         }
     }

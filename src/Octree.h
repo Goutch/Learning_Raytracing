@@ -4,9 +4,9 @@
 
 #include "glm/glm.hpp"
 using namespace glm;
-typedef vec3 data_type;
+typedef int data_type;
 struct node{
-    vec3 value;
+    data_type value;
 
     int parent;
     bool leaf;
@@ -20,7 +20,7 @@ class Octree {
     void compress(int i);
     void clear(int i);
 public:
-    Octree(data_type value);
+    Octree(data_type default_value);
 
     void insert(data_type value,int x,int y,int z,int depth);
 
