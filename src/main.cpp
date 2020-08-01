@@ -14,7 +14,7 @@
 #include "graphics/Renderer.h"
 
 #include "glm/gtc/matrix_transform.hpp"
-#include "Timer.h"
+#include "Clock.h"
 #include "array"
 #include "Octree.h"
 
@@ -67,22 +67,22 @@ static void updateCamera(float delta) {
 
 
     vec3 translation = vec3(0);
-    if (glfwGetKey(window, GLFW_KEY_S)==GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
         translation.z += 1;
     }
-    if (glfwGetKey(window, GLFW_KEY_W)==GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         translation.z = -1;
     }
-    if (glfwGetKey(window, GLFW_KEY_D)==GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         translation.x += 1;
     }
-    if (glfwGetKey(window, GLFW_KEY_A)==GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         translation.x = -1;
     }
-    if (glfwGetKey(window, GLFW_KEY_SPACE)==GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         translation.y += 1;
     }
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)==GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
         translation.y = -1;
     }
 
@@ -115,8 +115,8 @@ int main() {
     shader->setUniform("projection_matrix", projection);
     shader->setUniform("texture_0", 0);
     shader->unbind();
-    Timer time;
-    Timer delta_time;
+    Clock time;
+    Clock delta_time;
     float delta = 0.0f;
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -145,15 +145,18 @@ int main() {
 
     return 0;*/
 
-    Octree octree(0);
-    int depth=2;
-    int range=(pow(2,2));
+    Octree octree(vec3(0));
+    int depth = 3;
+    int range = (pow(2, depth));
+    Clock clock;
     for (int x = 0; x < range; ++x) {
         for (int y = 0; y < range; ++y) {
             for (int z = 0; z < range; ++z) {
-                octree.insert(rand(),x,y,z,2);
+                octree.insert(vec3(0), x, y, z, depth);
             }
         }
     }
-    int size=octree.getData().size();
+    std::cout << clock.ms() << std::endl;
+    int size = octree.getData().size();
+    std::cout << "size:" << size << std::endl;
 }
