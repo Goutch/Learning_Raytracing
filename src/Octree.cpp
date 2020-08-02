@@ -31,7 +31,7 @@ void Octree::insert(data_type value, int x, int y, int z, int depth) {
             if (free.empty()) {
                 data.push_back({data[current].value, current, true, EMPTY_CHILDREN});
             } else {
-                data[free.front()] = {data[current].value, current, true, EMPTY_CHILDREN};
+                data[free.top()] = {data[current].value, current, true, EMPTY_CHILDREN};
                 free.pop();
             }
 

@@ -1,7 +1,6 @@
 #pragma once
 #include "vector"
 #include "queue"
-
 #include "glm/glm.hpp"
 using namespace glm;
 typedef int data_type;
@@ -14,7 +13,7 @@ struct node{
 };
 class Octree {
     std::vector<node> data;
-    std::queue<int> free;
+    std::priority_queue<int,std::vector<int>, std::greater<>> free;
     data_type at(int x,int y,int z,int depth);
 
     void compress(int i);
