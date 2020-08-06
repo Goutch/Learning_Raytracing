@@ -145,8 +145,8 @@ int main() {
 
     return 0;*/
 
-    Octree octree(0);
-    int depth = 5;
+    Octree octree(1);
+    int depth = 8;
     int range = (pow(2, depth));
     Clock clock;
     for (int x = 0; x < range; ++x) {
@@ -158,5 +158,17 @@ int main() {
     }
     std::cout << clock.ms() << std::endl;
     int size = octree.getData().size();
+    std::cout << "size:" << size << std::endl;
+    clock.reset();
+    std::vector<int> vector;
+    for (int x = 0; x < range; ++x) {
+        for (int y = 0; y < range; ++y) {
+            for (int z = 0; z < range; ++z) {
+                vector.push_back(1);
+            }
+        }
+    }
+    std::cout << clock.ms() << std::endl;
+    size = vector.size();
     std::cout << "size:" << size << std::endl;
 }

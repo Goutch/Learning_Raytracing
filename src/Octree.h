@@ -1,27 +1,59 @@
 #pragma once
+
 #include "vector"
 #include "queue"
 #include "glm/glm.hpp"
-using namespace glm;
-typedef int data_type;
-struct node{
-    data_type value;
 
-    int parent;
-    bool leaf;
-    int children[8];
+using namespace glm;
+typedef std::uint32_t ui32;
+typedef std::uint8_t ui8;
+#define LEAF_MASK 0x10000000
+#define VALUE_MASK 0xEFFFFFFF
+
+#define ROOT 8
+#define RIGHT 4
+#define TOP 2
+#define BACK 1
+
+enum NODE_TYPE {
+    R = ROOT,
+    LDF = 0,
+    LDB = BACK,
+    LTF = TOP,
+    LTB = TOP + BACK,
+    RDF = RIGHT,
+    RDB = RIGHT + BACK,
+    RTF = RIGHT + TOP,
+    RTB = RIGHT + TOP + BACK,
 };
+
+struct node {
+    ui32 parent;
+    ui32 children[8];
+    ui8 node_type;
+    node(ui32 parent, ui32 value, ui8 node_type) : parent(parent), node_type(node_type) {
+        for (int i = 0; i < 8; ++i) {
+            children[i] = value;
+        }
+    }
+};
+
 class Octree {
     std::vector<node> data;
-    std::priority_queue<int,std::vector<int>, std::greater<>> free;
-    data_type at(int x,int y,int z,int depth);
+    std::priority_queue<ui32, std::vector<ui32>, std::greater<>> free;
 
-    void compress(int i);
-    void clear(int i);
+    ui32 at(int x, int y, int z, int depth);
+
+    void compress(ui32 i);
+
+    void clear(ui32 i);
+
+    void remove(ui32 i);
+
 public:
-    Octree(data_type default_value);
+    Octree(ui32 default_value);
 
-    void insert(data_type value,int x,int y,int z,int depth);
+    void insert(ui32 value, int x, int y, int z, int depth);
 
-    std::vector<node>& getData();
+    std::vector<node> &getData();
 };

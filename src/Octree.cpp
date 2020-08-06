@@ -4,80 +4,64 @@
 
 #include "Octree.h"
 
-#define RIGHT 4
-#define TOP 2
-#define BACK 1
-#define EMPTY -1
-#define EMPTY_CHILDREN {-1, -1, -1, -1, -1, -1, -1, -1}
-
-Octree::Octree(data_type default_value) {
-    data.push_back({default_value, -1, true, EMPTY_CHILDREN});
+Octree::Octree(ui32 default_value) {
+    data.push_back({0, -default_value, ROOT});
 }
 
-void Octree::insert(data_type value, int x, int y, int z, int depth) {
-    int current = 0;
-    int child;
+void Octree::insert(ui32 value, int x, int y, int z, int depth) {
+    ui32 current = 0;
+    ui8 child;
     for (int d = 1; d <= depth; ++d) {
-        const int radius = pow(2, depth - d);
+        int radius = 1 << depth - d;
         bool x_greater = x >= radius;
         bool y_greater = y >= radius;
         bool z_greater = z >= radius;
         child = (x_greater * RIGHT) + (y_greater * TOP) + (z_greater * BACK);
+        if (d == depth) {
+            break;
+        }
         x -= radius * x_greater;
         y -= radius * y_greater;
         z -= radius * z_greater;
-        if (data[current].children[child] == EMPTY) {
-            data[current].children[child] = data.size();
+        //if child is a leaf
+        if (data[current].children[child] & LEAF_MASK) {
+            //add new node
             if (free.empty()) {
-                data.push_back({data[current].value, current, true, EMPTY_CHILDREN});
+                data.push_back({current, data[current].children[child], child});
+                data[current].children[child] = (data.size()-1);
             } else {
-                data[free.top()] = {data[current].value, current, true, EMPTY_CHILDREN};
+                data[free.top()] = {current, data[current].children[child], child};
+                data[current].children[child] = free.top();
                 free.pop();
             }
-
-            data[current].leaf = false;
         }
-        current = data[current].children[child];
+        current=data[current].children[child];
     }
-    data[current].value = value;
-    //todo fix this
-   // compress(data[current].parent);
+    //if it is a node clear it.
+    if (data[current].children[child] > 0) {
+        clear(data[current].children[child]);
+    }
+    data[current].children[child] = value ^ LEAF_MASK;
 }
 
-void Octree::clear(int i) {
-    if (data[i].leaf) {
-        free.emplace(i);
-    } else {
-        for (int j = 1; j < 8; ++j) {
-            clear(data[i].children[j]);
-        }
-    }
-    for (int k = 0; k < 8; ++k) {
-        data[i].children[k] = EMPTY;
-    }
-}
+void Octree::clear(ui32 i) {
 
-void Octree::compress(int i) {
-    for (int j = 0; j < 7; ++j) {
-        if (data[i].children[j] == EMPTY || data[i].children[j + 1] == EMPTY ||
-            data[data[i].children[j]].value != data[data[i].children[j + 1]].value) {
-            return;
-        }
-    }
-
-    data[i].value = data[i].children[0];
-    for (int k = 0; k < 8; ++k) {
-        if (data[i].children[k] != EMPTY)
-            clear(data[i].children[k]);
-    }
-
-    if (data[i].parent != EMPTY) {
-        compress(data[i].parent);
-    }
 }
 
 std::vector<node> &Octree::getData() {
     return data;
+}
+
+void Octree::remove(ui32 i) {
+    node& n = data[data.size()-1];
+    data[i]=data[data.size()-1];
+    data[n.parent].children[n.node_type]=i;
+    data.pop_back();
+    for (int j = 0; j < 8; ++j) {
+        if(!(n.children[j] & LEAF_MASK)){
+            remove(n.children[j]);
+        }
+    }
 }
 
 
