@@ -6,10 +6,12 @@
 #include <iostream>
 
 void ShaderProgram::setShaders(std::string vertex_path, std::string fragment_path) {
+    std::cout<<vertex_path<<std::endl;
     std::string sourcevs;
     sourcevs = getSource(vertex_path);
     unsigned int vs = compileShader(GL_VERTEX_SHADER, sourcevs);
 
+    std::cout<<vertex_path<<std::endl;
     std::string sourcefs;
     sourcefs = getSource(fragment_path);
     unsigned int fs = compileShader(GL_FRAGMENT_SHADER, sourcefs);

@@ -1,9 +1,13 @@
 #pragma once
 #include "vector"
+#include "octree.h"
 class StorageBuffer {
     unsigned int ssbo_id;
-
-    StorageBuffer(std::vector<int>& data);
+public:
     void bind();
     void unbind();
+
+
+    StorageBuffer(std::vector<node>& data);
+    ~StorageBuffer();
 };

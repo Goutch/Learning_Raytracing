@@ -5,8 +5,6 @@
 #include <iostream>
 
 #define GLFW_INCLUDE_NONE
-
-#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
 #include <graphics/ShaderProgram.h>
@@ -15,8 +13,8 @@
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "Clock.h"
-#include "array"
 #include "Octree.h"
+#include "graphics/StorageBuffer.h"
 
 GLFWwindow *window;
 int fps = 0;
@@ -44,8 +42,6 @@ static void updateCamera(float delta) {
     double x, y;
     glfwGetCursorPos(window, &x, &y);
     glfwSetCursorPos(window, static_cast<float>(WIDTH) / 2.0f, static_cast<float>(HEIGHT) / 2.0f);
-
-
     float fov = 90;
     vec2 change;
     change.x = (((static_cast<float>(WIDTH) / 2.0f) - x) / static_cast<float>(WIDTH)) * glm::radians(fov);
@@ -89,8 +85,20 @@ static void updateCamera(float delta) {
     view_matrix = glm::translate(view_matrix, translation * delta);
 }
 
+void fillOctree(Octree &octree) {
+    int depth = 3;
+    int range = (pow(2, depth));
+    for (int x = 0; x < range; ++x) {
+        for (int y = 0; y < range; ++y) {
+            for (int z = 0; z < range; ++z) {
+                octree.insert(10, x, y, z, depth);
+            }
+        }
+    }
+}
+
 int main() {
-    /*fps = 0;
+    fps = 0;
     Renderer *renderer = new Renderer();
 
     window = renderer->init();
@@ -99,7 +107,10 @@ int main() {
 
     texture->setData(nullptr, 512, 512, Texture::RGBA32F);
 
+    Octree octree(1);
+    fillOctree(octree);
 
+    StorageBuffer ssbo(octree.getData());
     ComputeShader *compute = new ComputeShader("../res/compute.glsl");
 
     compute->setGroups(512, 512, 1, 1, 1, 1);
@@ -125,12 +136,13 @@ int main() {
         }
         updateCamera(delta);
         //view_matrix = glm::rotate(view_matrix, (float) (delta * M_PI), vec3(1.0f, 1.0f, 0.0f));
+        ssbo.bind();
         compute->bind();
-        compute->setUniform("position",view_matrix[4]);
+        compute->setUniform("position", view_matrix[3]);
         compute->setUniform("view_matrix", glm::inverse(view_matrix));
         compute->execute();
         compute->unbind();
-
+        ssbo.unbind();
         renderer->render(texture, shader);
 
         glfwSwapBuffers(window);
@@ -143,32 +155,7 @@ int main() {
     renderer->terminate();
     delete renderer;
 
-    return 0;*/
+    return 0;
 
-    Octree octree(1);
-    int depth = 8;
-    int range = (pow(2, depth));
-    Clock clock;
-    for (int x = 0; x < range; ++x) {
-        for (int y = 0; y < range; ++y) {
-            for (int z = 0; z < range; ++z) {
-                octree.insert(1, x, y, z, depth);
-            }
-        }
-    }
-    std::cout << clock.ms() << std::endl;
-    int size = octree.getData().size();
-    std::cout << "size:" << size << std::endl;
-    clock.reset();
-    std::vector<int> vector;
-    for (int x = 0; x < range; ++x) {
-        for (int y = 0; y < range; ++y) {
-            for (int z = 0; z < range; ++z) {
-                vector.push_back(1);
-            }
-        }
-    }
-    std::cout << clock.ms() << std::endl;
-    size = vector.size();
-    std::cout << "size:" << size << std::endl;
+
 }

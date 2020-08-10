@@ -4,6 +4,7 @@
 
 #include "ComputeShader.h"
 #include "glad/glad.h"
+#include "iostream"
 ComputeShader::ComputeShader(std::string path) : ShaderProgram() {
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &max_work_group_x);
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &max_work_group_y);
@@ -15,6 +16,7 @@ ComputeShader::ComputeShader(std::string path) : ShaderProgram() {
 
     glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &max_work_group_invocations);
 
+    std::cout<<path<<std::endl;
     std::string source_cs;
     source_cs = getSource(path);
     unsigned int cs = compileShader(GL_COMPUTE_SHADER, source_cs);

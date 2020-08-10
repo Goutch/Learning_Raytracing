@@ -28,9 +28,10 @@ enum NODE_TYPE {
 };
 
 struct node {
+    ui32 node_type;
     ui32 parent;
     ui32 children[8];
-    ui8 node_type;
+
     node(ui32 parent, ui32 value, ui8 node_type) : parent(parent), node_type(node_type) {
         for (int i = 0; i < 8; ++i) {
             children[i] = value;
