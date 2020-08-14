@@ -90,14 +90,14 @@ static void updateCamera(float delta) {
 void fillOctree(Octree &octree) {
     FastNoise noise;
     float scale=0.33;
-    int depth = 10;
+    int depth = 8;
     int range = (pow(2, depth));
     for (int x = 0; x < range; ++x) {
         for (int y = 0; y < range; ++y) {
             for (int z = 0; z < range; ++z) {
                 if(noise.GetNoise((float)x*scale,(float)y*scale,(float)z*scale)>0.0f)
                 {
-                    octree.insert(10, x, y, z, depth);
+                    octree.set(10, x, y, z, depth);
                 }
             }
         }

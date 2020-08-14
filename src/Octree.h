@@ -49,14 +49,13 @@ class Octree {
 
     void compress(ui32 i);
 
-    void clear(ui32 i);
+    void clearAndReplace(ui32 value, ui32 i);
 
-    void remove(ui32 i);
 
 public:
     Octree(ui32 default_value);
 
-    void insert(ui32 value, ui32 x, ui32 y, ui32 z, ui32 depth);
+    void set(ui32 value, ui32 x, ui32 y, ui32 z, ui32 depth);
 
     std::vector<node> &getData();
 };

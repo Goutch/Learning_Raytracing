@@ -105,10 +105,10 @@ namespace glm
 		int Offset,
 		int Bits);
 
-	/// Returns the insertion the bits least-significant bits of insert into base.
+	/// Returns the insertion the bits least-significant bits of set into base.
 	///
 	/// The result will have bits [offset, offset + bits - 1] taken
-	/// from bits [0, bits - 1] of insert, and all other bits taken
+	/// from bits [0, bits - 1] of set, and all other bits taken
 	/// directly from the corresponding bits of base. If bits is
 	/// zero, the result will simply be base. The result will be
 	/// undefined if offset or bits is negative, or if the sum of

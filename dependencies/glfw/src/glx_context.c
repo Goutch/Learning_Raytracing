@@ -173,7 +173,7 @@ static void makeContextCurrentGLX(_GLFWwindow* window)
         if (!glXMakeCurrent(_glfw.x11.display, None, NULL))
         {
             _glfwInputError(GLFW_PLATFORM_ERROR,
-                            "GLX: Failed to clear current context");
+                            "GLX: Failed to clearAndReplace current context");
             return;
         }
     }

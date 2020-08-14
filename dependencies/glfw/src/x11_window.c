@@ -1160,7 +1160,7 @@ static void processEvent(XEvent *event)
     int keycode = 0;
     Bool filtered = False;
 
-    // HACK: Save scancode as some IMs clear the field in XFilterEvent
+    // HACK: Save scancode as some IMs clearAndReplace the field in XFilterEvent
     if (event->type == KeyPress || event->type == KeyRelease)
         keycode = event->xkey.keycode;
 

@@ -212,7 +212,7 @@ static void makeContextCurrentEGL(_GLFWwindow* window)
                             EGL_NO_CONTEXT))
         {
             _glfwInputError(GLFW_PLATFORM_ERROR,
-                            "EGL: Failed to clear current context: %s",
+                            "EGL: Failed to clearAndReplace current context: %s",
                             getEGLErrorString(eglGetError()));
             return;
         }

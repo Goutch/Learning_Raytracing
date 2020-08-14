@@ -1,6 +1,6 @@
 #pragma once
 #include "vector"
-#include "octree.h"
+#include "Octree.h"
 class StorageBuffer {
     unsigned int ssbo_id;
 public:

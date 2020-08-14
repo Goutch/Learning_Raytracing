@@ -597,7 +597,7 @@ glfwSetWindowCloseCallback(window, window_close_callback);
 @endcode
 
 The callback function is called directly _after_ the close flag has been set.
-It can be used for example to filter close requests and clear the close flag
+It can be used for example to filter close requests and clearAndReplace the close flag
 again unless certain conditions are met.
 
 @code

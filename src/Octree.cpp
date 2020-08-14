@@ -8,7 +8,7 @@ Octree::Octree(ui32 default_value) {
     data.push_back({0, -default_value, ROOT});
 }
 
-void Octree::insert(ui32 value, ui32 x, ui32 y, ui32  z, ui32 depth) {
+void Octree::set(ui32 value, ui32 x, ui32 y, ui32 z, ui32 depth) {
     ui32 current = 0;
     ui8 child;
     for (int d = 1; d <= depth; ++d) {
@@ -28,36 +28,38 @@ void Octree::insert(ui32 value, ui32 x, ui32 y, ui32  z, ui32 depth) {
             //add new node
             if (free.empty()) {
                 data.push_back({current, data[current].children[child], child});
-                data[current].children[child] = (data.size()-1);
+                data[current].children[child] = (data.size() - 1);
             } else {
                 data[free.top()] = {current, data[current].children[child], child};
                 data[current].children[child] = free.top();
                 free.pop();
             }
         }
-        current=data[current].children[child];
+        current = data[current].children[child];
     }
-    //if it is a node clear it.
-    if (data[current].children[child] > 0) {
-        clear(data[current].children[child]);
+    //if it is a node clearAndReplace it.
+    if (!(data[current].children[child] & LEAF_MASK)) {
+        clearAndReplace(value, data[current].children[child]);
+    } else {
+        data[current].children[child] = value ^ LEAF_MASK;
     }
-    data[current].children[child] = value ^ LEAF_MASK;
 }
 
 std::vector<node> &Octree::getData() {
     return data;
 }
 
-void Octree::remove(ui32 i) {
-    node& n = data[data.size()-1];
-    data[i]=data[data.size()-1];
-    data[n.parent].children[n.node_type]=i;
+void Octree::clearAndReplace(ui32 value, ui32 i) {
+    node &n = data[data.size() - 1];
+    data[i] = data[data.size() - 1];
+    data[n.parent].children[n.node_type] = i;
     data.pop_back();
     for (int j = 0; j < 8; ++j) {
-        if(!(n.children[j] & LEAF_MASK)){
-            remove(n.children[j]);
+        if (!(n.children[j] & LEAF_MASK)) {
+            clearAndReplace(value, n.children[j]);
         }
     }
+    data[i].children[data[i].node_type] = value ^ LEAF_MASK;
 }
 
 

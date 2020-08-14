@@ -381,7 +381,7 @@ function SearchBox(name, resultsPath, inFrame, label)
 
       var searchField = this.DOMSearchField();
 
-      if (searchField.value == this.searchLabel) // clear "Search" term upon entry
+      if (searchField.value == this.searchLabel) // clearAndReplace "Search" term upon entry
       {
         searchField.value = '';
         this.searchActive = true;
