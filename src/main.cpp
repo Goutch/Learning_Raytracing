@@ -5,6 +5,7 @@
 #include <iostream>
 
 #define GLFW_INCLUDE_NONE
+
 #include "GLFW/glfw3.h"
 
 #include <graphics/ShaderProgram.h>
@@ -15,7 +16,11 @@
 #include "Clock.h"
 #include "Octree.h"
 #include "graphics/StorageBuffer.h"
+#include "FastNoise.h"
 
+#define _USE_MATH_DEFINES
+
+#include <math.h>
 GLFWwindow *window;
 int fps = 0;
 float fps_time = 0.0f;
@@ -30,9 +35,6 @@ static void printFPS(float delta) {
     }
 }
 
-#define _USE_MATH_DEFINES
-
-#include <math.h>
 
 mat4 view_matrix = mat4(1.0f);
 float max_pitch = M_PI;
@@ -86,12 +88,17 @@ static void updateCamera(float delta) {
 }
 
 void fillOctree(Octree &octree) {
-    int depth = 3;
+    FastNoise noise;
+    float scale=0.33;
+    int depth = 10;
     int range = (pow(2, depth));
     for (int x = 0; x < range; ++x) {
         for (int y = 0; y < range; ++y) {
             for (int z = 0; z < range; ++z) {
-                octree.insert(10, x, y, z, depth);
+                if(noise.GetNoise((float)x*scale,(float)y*scale,(float)z*scale)>0.0f)
+                {
+                    octree.insert(10, x, y, z, depth);
+                }
             }
         }
     }

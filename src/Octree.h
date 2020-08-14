@@ -7,9 +7,9 @@
 using namespace glm;
 typedef std::uint32_t ui32;
 typedef std::uint8_t ui8;
+
 #define LEAF_MASK 0x10000000
 #define VALUE_MASK 0xEFFFFFFF
-
 #define ROOT 8
 #define RIGHT 4
 #define TOP 2
@@ -28,11 +28,13 @@ enum NODE_TYPE {
 };
 
 struct node {
+
     ui32 node_type;
     ui32 parent;
     ui32 children[8];
 
-    node(ui32 parent, ui32 value, ui8 node_type) : parent(parent), node_type(node_type) {
+
+    node(ui32 parent, ui32 value, ui32 node_type) : parent(parent), node_type(node_type) {
         for (int i = 0; i < 8; ++i) {
             children[i] = value;
         }
@@ -54,7 +56,7 @@ class Octree {
 public:
     Octree(ui32 default_value);
 
-    void insert(ui32 value, int x, int y, int z, int depth);
+    void insert(ui32 value, ui32 x, ui32 y, ui32 z, ui32 depth);
 
     std::vector<node> &getData();
 };

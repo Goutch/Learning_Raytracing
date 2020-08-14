@@ -8,7 +8,7 @@ Octree::Octree(ui32 default_value) {
     data.push_back({0, -default_value, ROOT});
 }
 
-void Octree::insert(ui32 value, int x, int y, int z, int depth) {
+void Octree::insert(ui32 value, ui32 x, ui32 y, ui32  z, ui32 depth) {
     ui32 current = 0;
     ui8 child;
     for (int d = 1; d <= depth; ++d) {
@@ -42,10 +42,6 @@ void Octree::insert(ui32 value, int x, int y, int z, int depth) {
         clear(data[current].children[child]);
     }
     data[current].children[child] = value ^ LEAF_MASK;
-}
-
-void Octree::clear(ui32 i) {
-
 }
 
 std::vector<node> &Octree::getData() {
