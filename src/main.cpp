@@ -90,14 +90,15 @@ static void updateCamera(float delta) {
 void fillOctree(Octree &octree) {
     FastNoise noise;
     float scale=0.33;
-    int depth = 8;
+    int depth = 5;
     int range = (pow(2, depth));
     for (int x = 0; x < range; ++x) {
         for (int y = 0; y < range; ++y) {
             for (int z = 0; z < range; ++z) {
-                if(noise.GetNoise((float)x*scale,(float)y*scale,(float)z*scale)>0.0f)
+                float n_value=noise.GetNoise((float)x*scale,(float)y*scale,(float)z*scale);
+                if(n_value>0.0f)
                 {
-                    octree.set(10, x, y, z, depth);
+                    octree.set(1, x, y, z, depth);
                 }
             }
         }
@@ -133,7 +134,6 @@ int main() {
     shader->setUniform("projection_matrix", projection);
     shader->setUniform("texture_0", 0);
     shader->unbind();
-    Clock time;
     Clock delta_time;
     float delta = 0.0f;
     while (!glfwWindowShouldClose(window)) {
@@ -142,7 +142,6 @@ int main() {
             glfwSetWindowShouldClose(window, true);
         }
         updateCamera(delta);
-        //view_matrix = glm::rotate(view_matrix, (float) (delta * M_PI), vec3(1.0f, 1.0f, 0.0f));
         ssbo.bind();
         compute->bind();
         compute->setUniform("position", view_matrix[3]);
