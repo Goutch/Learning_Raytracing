@@ -113,7 +113,7 @@ int main() {
 
     Texture *texture = new Texture();
 
-    texture->setData(nullptr, 512, 512, Texture::RGBA32F);
+    texture->setData(nullptr, WIDTH, HEIGHT, Texture::RGBA32F);
 
     Octree octree(1);
     fillOctree(octree);
