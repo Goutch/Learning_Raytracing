@@ -1,3 +1,3 @@
 # Learning Raytracing
 
-Trying to render voxel via raytracing for fun
+My first attempt at raytracing voxels with opengl compute shaders
