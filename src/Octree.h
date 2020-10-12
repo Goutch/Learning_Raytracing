@@ -6,6 +6,7 @@
 
 using namespace glm;
 typedef std::uint32_t ui32;
+typedef std::uint16_t ui16;
 typedef std::uint8_t ui8;
 
 #define LEAF_MASK 0x10000000
@@ -44,18 +45,14 @@ struct node {
 class Octree {
     std::vector<node> data;
     std::priority_queue<ui32, std::vector<ui32>, std::greater<>> free;
-
-    ui32 at(int x, int y, int z, int depth);
-
-    void compress(ui32 i);
-
     void clearAndReplace(ui32 value, ui32 i);
-
-
+    ui32 getDimentionAt(ui32 depth);
+    bool isLeaf(ui32 i);
 public:
     Octree(ui32 default_value);
-
     void set(ui32 value, ui32 x, ui32 y, ui32 z, ui32 depth);
 
     std::vector<node> &getData();
+
+    ui32 setLeaf(ui32 node_value);
 };

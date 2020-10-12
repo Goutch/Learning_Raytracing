@@ -21,9 +21,12 @@
 #define _USE_MATH_DEFINES
 
 #include <math.h>
+
 GLFWwindow *window;
 int fps = 0;
 float fps_time = 0.0f;
+mat4 view_rotation = mat4(1.0f);
+vec4 view_position = vec4(0.0f, 0.0f, -1.0f, 1.0f);
 
 static void printFPS(float delta) {
     fps++;
@@ -32,11 +35,11 @@ static void printFPS(float delta) {
         std::cout << "fps:" << std::to_string(fps) << std::endl;
         fps_time = 0.0f;
         fps = 0;
+        std::cout << view_position.z << std::endl;
     }
 }
 
 
-mat4 view_matrix = mat4(1.0f);
 float max_pitch = M_PI;
 float current_pitch = 0;
 
@@ -47,59 +50,57 @@ static void updateCamera(float delta) {
     float fov = 90;
     vec2 change;
     change.x = (((static_cast<float>(WIDTH) / 2.0f) - x) / static_cast<float>(WIDTH)) * glm::radians(fov);
-    change.y = (((static_cast<float>(HEIGHT) / 2.0f) - y) / static_cast<float>(HEIGHT)) *
-               (glm::radians(fov) * ((float) HEIGHT / (float) WIDTH));
+    change.y = (((static_cast<float>(HEIGHT) / 2.0f) - y) / static_cast<float>(HEIGHT)) * (glm::radians(fov) * ((float) HEIGHT / (float) WIDTH));
 
     //go to pitch 0
-    view_matrix = glm::rotate(view_matrix, -current_pitch, vec3(1, 0, 0));
+    view_rotation = glm::rotate(view_rotation, -current_pitch, vec3(1, 0, 0));
     //rotate on y axis
-    view_matrix = glm::rotate(view_matrix, change.x, vec3(0, 1, 0));
+    view_rotation = glm::rotate(view_rotation, change.x, vec3(0, 1, 0));
     //go back to cuurent pitch
     current_pitch += change.y;
-    if (current_pitch > max_pitch) {
-        current_pitch = max_pitch;
-    } else if (current_pitch < -max_pitch) {
-        current_pitch = -max_pitch;
-    }
-    view_matrix = glm::rotate(view_matrix, current_pitch, vec3(1, 0, 0));
+    glm::clamp(current_pitch, -max_pitch, max_pitch);
+    view_rotation = glm::rotate(view_rotation, current_pitch, vec3(1, 0, 0));
 
 
     vec3 translation = vec3(0);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        translation.z += 1;
+        translation.z -= 1;
     }
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        translation.z = -1;
+        translation.z += 1;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         translation.x += 1;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        translation.x = -1;
+        translation.x -= 1;
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         translation.y += 1;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-        translation.y = -1;
+        translation.y -= 1;
     }
 
-    view_matrix = glm::translate(view_matrix, translation * delta);
+    view_position += view_rotation * vec4(translation * delta, 1.0f);
 }
 
 void fillOctree(Octree &octree) {
     FastNoise noise;
-    float scale=0.33;
-    int depth = 5;
+    float scale = 0.33;
+    int depth = 6;
     int range = (pow(2, depth));
     for (int x = 0; x < range; ++x) {
         for (int y = 0; y < range; ++y) {
             for (int z = 0; z < range; ++z) {
-                float n_value=noise.GetNoise((float)x*scale,(float)y*scale,(float)z*scale);
-                if(n_value>0.0f)
-                {
-                    octree.set(1, x, y, z, depth);
-                }
+               // float n_value = noise.GetNoise((float) x * scale, (float) y * scale, (float) z * scale);
+               // if (n_value > 0.0f) {
+               //     octree.set(1, x, y, z, depth);
+               // }
+               if(distance(vec3(x,y,z),vec3(range/2,range/2,range/2))<range/2)
+               {
+                   octree.set(1, x, y, z, depth);
+               }
             }
         }
     }
@@ -133,6 +134,7 @@ int main() {
     shader->bind();
     shader->setUniform("projection_matrix", projection);
     shader->setUniform("texture_0", 0);
+
     shader->unbind();
     Clock delta_time;
     float delta = 0.0f;
@@ -144,8 +146,9 @@ int main() {
         updateCamera(delta);
         ssbo.bind();
         compute->bind();
-        compute->setUniform("position", view_matrix[3]);
-        compute->setUniform("view_matrix", glm::inverse(view_matrix));
+        compute->setUniform("view_position", view_position);
+        compute->setUniform("view_rotation", glm::inverse(view_rotation));
+
         compute->execute();
         compute->unbind();
         ssbo.unbind();
