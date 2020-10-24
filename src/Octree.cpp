@@ -41,7 +41,7 @@ void Octree::set(ui32 value, ui32 x, ui32 y, ui32 z, ui32 depth) {
     if (!isLeaf(data[current].children[child])) {
         clearAndReplace(value, data[current].children[child]);
     } else {
-        data[current].children[child] = value ^ LEAF_MASK;
+        data[current].children[child] = setLeaf(value);
     }
 }
 
