@@ -21,8 +21,6 @@ public:
 
     GLFWwindow* init();
     void terminate();
-    void render(Texture* texture,ShaderProgram* shaderProgram);
-
-
+    void present(Texture* texture, ShaderProgram* shaderProgram);
 };
 

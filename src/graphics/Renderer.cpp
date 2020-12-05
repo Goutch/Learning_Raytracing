@@ -13,9 +13,10 @@
 #include "Texture.h"
 #include "Configs.h"
 
-void Renderer::render(Texture *texture, ShaderProgram *shaderProgram) {
+void Renderer::present(Texture *texture, ShaderProgram *shaderProgram) {
     shaderProgram->bind();
     texture->bind();
+    glCullFace(GL_BACK);
     quad->bind();
     quad->hasIndexBuffer() ?
     glDrawElements(GL_TRIANGLES, quad->getIndexCount(), GL_UNSIGNED_INT, 0) :
@@ -32,6 +33,10 @@ GLFWwindow *Renderer::init() {
     }
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     GL_Debug::init();
+
+    glEnable(GL_CULL_FACE);
+
+
     quad = new Mesh();
 
     std::vector<vec3> vertex_positions = {

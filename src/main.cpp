@@ -26,7 +26,12 @@ GLFWwindow *window;
 int fps = 0;
 float fps_time = 0.0f;
 mat4 view_rotation = mat4(1.0f);
-vec4 view_position = vec4(0.0f, 0.0f, -1.0f, 1.0f);
+vec4 view_position = vec4(0.0f, 0.0f, -3.0f, 1.0f);
+std::vector<vec4> voxel_materials = {vec4(0.0f, 0.0f, 0.0f, 0.0f),
+                                     vec4(1.0f, 0.0f, 0.0f, 1.0f),
+                                     vec4(0.0f, 1.0f, 0.0f, 1.0f),
+                                     vec4(0.0f, 0.0f, 1.0f, 1.0f),
+                                     vec4(1.0f, 0.0f, 1.0f, 1.0f),};
 
 static void printFPS(float delta) {
     fps++;
@@ -44,7 +49,7 @@ float max_pitch = M_PI;
 float current_pitch = 0;
 
 static void updateCamera(float delta) {
-    double x, y;
+    /*double x, y;
     glfwGetCursorPos(window, &x, &y);
     glfwSetCursorPos(window, static_cast<float>(WIDTH) / 2.0f, static_cast<float>(HEIGHT) / 2.0f);
     float fov = 90;
@@ -59,7 +64,7 @@ static void updateCamera(float delta) {
     //go back to cuurent pitch
     current_pitch += change.y;
     glm::clamp(current_pitch, -max_pitch, max_pitch);
-    view_rotation = glm::rotate(view_rotation, current_pitch, vec3(1, 0, 0));
+    view_rotation = glm::rotate(view_rotation, current_pitch, vec3(1, 0, 0));*/
 
 
     vec3 translation = vec3(0);
@@ -82,25 +87,27 @@ static void updateCamera(float delta) {
         translation.y -= 1;
     }
 
-    view_position += view_rotation * vec4(translation * delta, 1.0f);
+    view_position += vec4(translation * delta, 1.0f);
 }
 
 void fillOctree(Octree &octree) {
     FastNoise noise;
     float scale = 0.33;
-    int depth = 6;
-    int range = (pow(2, depth));
+    int depth =2;
+    int range = octree.getDimentionAt(depth);
     for (int x = 0; x < range; ++x) {
         for (int y = 0; y < range; ++y) {
             for (int z = 0; z < range; ++z) {
-               // float n_value = noise.GetNoise((float) x * scale, (float) y * scale, (float) z * scale);
-               // if (n_value > 0.0f) {
-               //     octree.set(1, x, y, z, depth);
-               // }
-               if(distance(vec3(x,y,z),vec3(range/2,range/2,range/2))<range/2)
-               {
-                   octree.set(1, x, y, z, depth);
-               }
+                octree.set((z+y+x)%voxel_materials.size(), x, y, z, depth);
+                //octree.set(1, x, y, z, depth);
+                // float n_value = noise.GetNoise((float) x * scale, (float) y * scale, (float) z * scale);
+                // if (n_value > 0.0f) {
+                //     octree.set(1, x, y, z, depth);
+                // }
+                //if(distance(vec3(x,y,z),vec3(range/2.0f,range/2.0f,range/2.0f))<=range/2.0f)
+                //{
+                //    octree.set(3, x, y, z, depth);
+                //}
             }
         }
     }
@@ -116,15 +123,14 @@ int main() {
 
     texture->setData(nullptr, WIDTH, HEIGHT, Texture::RGBA32F);
 
-    Octree octree(1);
+    Octree octree(0);
     fillOctree(octree);
-
-    StorageBuffer ssbo(octree.getData());
+    StorageBuffer materials_ssbo = StorageBuffer<vec4>(voxel_materials, 2);
+    StorageBuffer octree_ssbo = StorageBuffer<Octree::Node>(octree.getData(), 1);
     ComputeShader *compute = new ComputeShader("../res/compute.glsl");
-
-    compute->setGroups(512, 512, 1, 1, 1, 1);
     compute->bind();
-
+    compute->setGroups(512, 512, 1, 1, 1, 1);
+    compute->setUniform("voxels_per_units", 256.0f);
     compute->setUniform("resolution", vec2(512, 512));
     compute->setUniform("img_output", 0);
     compute->unbind();
@@ -144,15 +150,17 @@ int main() {
             glfwSetWindowShouldClose(window, true);
         }
         updateCamera(delta);
-        ssbo.bind();
+        octree_ssbo.bind();
+        materials_ssbo.bind();
         compute->bind();
         compute->setUniform("view_position", view_position);
         compute->setUniform("view_rotation", glm::inverse(view_rotation));
 
         compute->execute();
         compute->unbind();
-        ssbo.unbind();
-        renderer->render(texture, shader);
+        octree_ssbo.unbind();
+        materials_ssbo.unbind();
+        renderer->present(texture, shader);
 
         glfwSwapBuffers(window);
         delta = delta_time.ns() / SECONDS_TO_NANOSECOND;
