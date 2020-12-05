@@ -93,21 +93,21 @@ static void updateCamera(float delta) {
 void fillOctree(Octree &octree) {
     FastNoise noise;
     float scale = 0.33;
-    int depth =2;
+    int depth =5;
     int range = octree.getDimentionAt(depth);
-    for (int x = 0; x < range; ++x) {
-        for (int y = 0; y < range; ++y) {
-            for (int z = 0; z < range; ++z) {
-                octree.set((z+y+x)%voxel_materials.size(), x, y, z, depth);
+    for (int x = 0; x <= range; ++x) {
+        for (int y = 0; y <= range; ++y) {
+            for (int z = 0; z <= range; ++z) {
+                //octree.set((z+y+x)%voxel_materials.size(), x, y, z, depth);
                 //octree.set(1, x, y, z, depth);
                 // float n_value = noise.GetNoise((float) x * scale, (float) y * scale, (float) z * scale);
                 // if (n_value > 0.0f) {
                 //     octree.set(1, x, y, z, depth);
                 // }
-                //if(distance(vec3(x,y,z),vec3(range/2.0f,range/2.0f,range/2.0f))<=range/2.0f)
-                //{
-                //    octree.set(3, x, y, z, depth);
-                //}
+                if(distance(vec3(x,y,z),vec3(range/2.0f,range/2.0f,range/2.0f))<=(range/2.0f))
+                {
+                    octree.set(3, x, y, z, depth);
+                }
             }
         }
     }
