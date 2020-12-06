@@ -2,8 +2,8 @@
 #define RIGHT 4
 #define TOP 2
 #define BACK 1
-#define MAX_STEP 100
-#define MAX_DIST 100.0
+#define MAX_STEP 64
+#define MAX_DIST 3.0
 #define CHUNK_SIZE 256
 #define MAX_DEPTH 8
 const uint LEAF_FLAG= 0x10000000;
@@ -31,6 +31,19 @@ uniform mat4 view_rotation;
 uniform vec4 view_position;
 uniform float voxels_per_units;
 
+uint index_stack[MAX_DEPTH]={
+0, 0, 0, 0, 0, 0, 0, 0
+};
+int child_type_stack[MAX_DEPTH-1]={
+0, 0, 0, 0, 0, 0, 0
+};
+vec3 position_stack[MAX_DEPTH]={
+vec3(0, 0, 0), vec3(0, 0, 0),
+vec3(0, 0, 0), vec3(0, 0, 0),
+vec3(0, 0, 0), vec3(0, 0, 0),
+vec3(0, 0, 0), vec3(0, 0, 0)
+};
+int depth=0;
 
 bool isLeaf(uint node_index)
 {
@@ -41,125 +54,130 @@ uint getValue(uint node_index)
 {
     return node_index & VALUE_MASK;
 }
-
+float sizeAt(int depth)
+{
+    return (1<<(MAX_DEPTH-depth))/voxels_per_units;
+}
+bool isInside(vec3 p,vec3 box_position,vec3 box_radius)
+{
+    vec3 q = abs(p-box_position) - box_radius;
+    return 0.>length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
 vec3 getBoxDistances(vec3 o, vec3 d, vec3 box_position, vec3 box_radius, ivec3 d_axis, out int min_index)
 {
     min_index=-1;
     vec3 min=box_position-box_radius;
     vec3 max=box_position+box_radius;
 
-    vec3 next=box_position + (box_radius*d_axis);
+    vec3 next_planes=box_position + (box_radius*d_axis);
 
-    vec3 ts=vec3(MAX_DIST);
-    float min_t=MAX_DIST;
-    for (int i =0;i<3;i++)
+    vec3 ts=(next_planes-o)/d;
+    vec3 p=o+(d*ts.x);
+    if(ts.x<0||
+    p.y < min.y || p.y > max.y||
+    p.z < min.z || p.z > max.z)
     {
-        float t=(next[i]-o[i])/d[i];
-        vec3 p=(o+(t*d));
-        int j=int(mod(i+1, 3));
-        int k=int(mod(i+2, 3));
-        if (t>=0.&&
-        t<min_t&&
-        p[j] > min[j] && p[j] < max[j] &&
-        p[k] > min[k] && p[k] < max[k])
-        {
-            min_t=t;
-            ts[i]=t;
-            min_index=i;
-        }
+        ts.x=MAX_DIST;
     }
+    p=o+(d*ts.y);
+    if(ts.y<0||
+    p.x < min.x || p.x > max.x||
+    p.z < min.z || p.z > max.z)
+    {
+        ts.y=MAX_DIST;
+    }
+    p=o+(d*ts.z);
+    if(ts.z<0||
+    p.y < min.y || p.y > max.y||
+    p.x < min.x || p.x > max.x)
+    {
+        ts.z=MAX_DIST;
+    }
+    min_index=ts.x<ts.y&&ts.x<ts.z?0:(ts.y<ts.z?1:2);
+
     return ts;
 }
-int getChild(vec3 position, vec3 octree_position, out ivec3 greater)
+int getChild(vec3 position, vec3 octree_position, out ivec3 child_position)
 {
-    greater=ivec3(
+    child_position=ivec3(
     int(position.x >= octree_position.x),
     int(position.y >= octree_position.y),
     int(position.z >= octree_position.z));
-    return (greater.x* RIGHT) + (greater.y * TOP) + (greater.z* BACK);
+    return (child_position.x * RIGHT) + (child_position.y * TOP) + (child_position.z* BACK);
 }
-
+//find closest t to bounding box
+//decend the octree to the closest voxel of the found t
+//if voxel is not empty juste return its color
+//else find next voxel
+//get 3 next ts to next planes of this depth
+//get the min t
+//pop to find common parent
+//ounce found, go to child of common parent that contain next voxel.
+//repeat
 vec4 march(vec3 o, vec3 d)
 {
+    float t=0.;
     //Init variables
-    int depth=0;
-
-    uint index_stack[MAX_DEPTH]={
-    0, 0, 0, 0, 0, 0, 0, 0
-    };
-
-    vec3 position_stack[MAX_DEPTH]={
-    vec3(0, 0, 0), vec3(0, 0, 0),
-    vec3(0, 0, 0), vec3(0, 0, 0),
-    vec3(0, 0, 0), vec3(0, 0, 0),
-    vec3(0, 0, 0), vec3(0, 0, 0)
-    };
-
     ivec3 d_axis=ivec3(
     d.x>0?1:-1,
     d.y>0?1:-1,
     d.z>0?1:-1);
 
     int min_dist_index;
+    vec3 distances;
     //Get the t closest to chunk
-    vec3 distances=getBoxDistances(o, d, vec3(0, 0, 0), vec3((CHUNK_SIZE/voxels_per_units)/2.), -d_axis, min_dist_index);
+    if(!isInside(o,vec3(0.,0.,0.),vec3(sizeAt(0)/2.)))
+    {
+        distances=getBoxDistances(o, d, vec3(0, 0, 0), vec3(sizeAt(0)/2.), -d_axis, min_dist_index);
+        t=distances[min_dist_index];
+    }
 
-    float t=distances[min_dist_index];
-
-    vec3 p=o+(d*t);
 
     for (int i=0;i<MAX_STEP;i++)
     {
-        //if did not it anything
-        if(i==MAX_STEP-1)
+        //if did not hit anything
+        if(t>=MAX_DIST)break;
+        if (i==MAX_STEP-1)
         {
-            return vec4(1.,0.,1.,0.);
+            return vec4(0., 0., 0., 1.);
         }
-        /*if (t>=MAX_DIST)
-        {
-            return vec4(0.,1.,1.,0.);
-        }*/
-
-
-        //Go down the tree until find a leaf
-        float world_size=(1<<(MAX_DEPTH-depth))/voxels_per_units;
+        //Find the closest leaf in current octree
         while (!isLeaf(index_stack[depth]))
         {
+            ivec3 child_position;
+            int child = getChild(o+(d*t),  position_stack[depth], child_position);
+            child_type_stack[depth]=child;
             depth++;
-            ivec3 greater;
-            int child = getChild(p, position_stack[depth-1], greater);
             index_stack[depth]=octree[index_stack[depth-1]].children[child];
 
-            world_size=(1<<(MAX_DEPTH-depth))/voxels_per_units;
-            float world_radius=world_size/2.;
+            float radius=sizeAt(depth)/2.;
 
-            position_stack[depth].x = position_stack[depth-1].x + ((greater.x)*world_radius) + ((greater.x-1)*world_radius);
-            position_stack[depth].y = position_stack[depth-1].y + ((greater.y)*world_radius) + ((greater.y-1)*world_radius);
-            position_stack[depth].z = position_stack[depth-1].z + ((greater.z)*world_radius) + ((greater.z-1)*world_radius);
+            position_stack[depth] = position_stack[depth-1] + ((child_position)*radius) + ((child_position-1)*radius);
         }
-        //if leaf found is not empty return green
+
+        //if current leaf is not empty return its color
         if (getValue(index_stack[depth])!=0)
         {
             //return vec4(t/MAX_DIST, 0., 0., 1.);
             return materials[getValue(index_stack[depth])];
         }
+
         //Else find next t
-        distances=getBoxDistances(o+(d*t), d, position_stack[depth], vec3(world_size/2.), d_axis, min_dist_index);
 
-        t+=distances[min_dist_index];
-        p=(d*t)+o;
-        //return vec4(t/MAX_DIST,0.,0.,1.);
-        //return vec4(depth/MAX_DEPTH,0.,0.,1.);
+        distances=getBoxDistances(o, d, position_stack[depth], vec3(sizeAt(depth)/2.), d_axis, min_dist_index);
+        //PROBLEM SECOND TIME COMMING HERE AT i==1 t IS NOW MAX_DIST
 
-        ivec3 move= ivec3(0);
-        move[min_dist_index]=d_axis[min_dist_index];
+        t=distances[min_dist_index];
 
-        vec3 target_octree_pos=position_stack[depth]+(move*world_size);
 
-        vec3 min;
-        vec3 max;
+
+        ivec3 move_dir = ivec3(0);
+        move_dir[min_dist_index]=d_axis[min_dist_index];
+
         bool out_of_bound=false;
-        //go up if parent does not contain target_octree_posiition
+        bool can_advance;
+        ivec3 child_position;
+        //find common parent
         do
         {
             if (depth==0)
@@ -168,36 +186,36 @@ vec4 march(vec3 o, vec3 d)
                 break;
             }
             depth--;
-            world_size=(1<<(MAX_DEPTH-depth))/voxels_per_units;
-            min=position_stack[depth]-(world_size/2.);
-            max=position_stack[depth]+(world_size/2.);
-        } while ((out_of_bound||
-        target_octree_pos.x<min.x||target_octree_pos.x>max.x&&
-        target_octree_pos.y<min.y||target_octree_pos.y>max.y&&
-        target_octree_pos.z<min.z||target_octree_pos.z>max.z));
+            child_position=ivec3((child_type_stack[depth]>>2) & 1,(child_type_stack[depth]>>1) & 1, child_type_stack[depth] & 1);
+            child_position+=move_dir;
+            can_advance=!(
+            child_position.x>1||
+            child_position.y>1||
+            child_position.z>1||
+            child_position.x<0||
+            child_position.y<0||
+            child_position.z<0);
+
+            if (can_advance)
+            {
+                child_type_stack[depth]=
+                ((child_position.x)* RIGHT) +
+                ((child_position.y) * TOP) +
+                ((child_position.z)* BACK);
+            }
+
+        } while (!can_advance);
 
         if (out_of_bound)
             break;
 
-        //once common parent found go to parent target position
-        ivec3 greater;
-        int child =getChild(target_octree_pos, position_stack[depth], greater);
-
+        //go to next children of common parent
         depth++;
-        index_stack[depth] = octree[index_stack[depth-1]].children[child];
-
-        world_size=(1<<(MAX_DEPTH-depth))/voxels_per_units;
-        float world_radius=world_size/2.;
-        position_stack[depth].x = position_stack[depth-1].x + ((greater.x)*world_radius) + ((greater.x-1)*world_radius);
-        position_stack[depth].y = position_stack[depth-1].y + ((greater.y)*world_radius) + ((greater.y-1)*world_radius);
-        position_stack[depth].z = position_stack[depth-1].z + ((greater.z)*world_radius) + ((greater.z-1)*world_radius);
-        if(isLeaf(index_stack[depth])&&getValue(index_stack[depth])!=0)
-        {
-            return vec4( position_stack[depth]+0.5,1.);
-        }
+        index_stack[depth] = octree[index_stack[depth-1]].children[child_type_stack[depth-1]];
+        position_stack[depth]=position_stack[depth-1]+((child_position)*sizeAt(depth+1)) + ((child_position-1)*sizeAt(depth+1));
 
     }
-    return vec4(t/MAX_DIST, t/MAX_DIST, t/MAX_DIST, 1.);
+    return vec4(1., 1., 1., 1.);
 }
 
 void main() {
