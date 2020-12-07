@@ -91,22 +91,24 @@ static void updateCamera(float delta) {
 
 void fillOctree(Octree &octree) {
     FastNoise noise;
-    float scale = 0.33;
+    float scale = 0.55;
     int depth =4;
     int range = octree.getDimentionAt(depth);
+    //octree.set(1, 0, 0, 0, depth);
+
     for (int x = 0; x <= range; ++x) {
         for (int y = 0; y <= range; ++y) {
             for (int z = 0; z <= range; ++z) {
                 //octree.set(x%(voxel_materials.size()), x, y, z, depth);
-                //octree.set(1, x, y, z, depth);
-                // float n_value = noise.GetNoise((float) x * scale, (float) y * scale, (float) z * scale);
-                // if (n_value > 0.0f) {
-                //     octree.set(1, x, y, z, depth);
-                // }
-                if(distance(vec3(x,y,z),vec3(range/2.0f,range/2.0f,range/2.0f))<=(range/2.0f))
-                {
-                    octree.set((z+y+x)%(voxel_materials.size()-1)+1, x, y, z, depth);
-                }
+                 // octree.set(1, x, y, z, depth);
+                 float n_value = noise.GetNoise((float) x * scale, (float) y * scale, (float) z * scale);
+                 if (n_value > 0.0f) {
+                     octree.set(0, x, y, z, depth);
+                 }
+                //if(distance(vec3(x,y,z),vec3(range/2.0f,range/2.0f,range/2.0f))<=(range/4.0f))
+                //{
+                //    octree.set((z+y+x)%(voxel_materials.size()-1)+1, x, y, z, depth);
+                //}
             }
         }
     }
@@ -122,8 +124,9 @@ int main() {
 
     texture->setData(nullptr, WIDTH, HEIGHT, Texture::RGBA32F);
 
-    Octree octree(0);
+    Octree octree(1);
     fillOctree(octree);
+    octree.optimize();
     StorageBuffer materials_ssbo = StorageBuffer<vec4>(voxel_materials, 2);
     StorageBuffer octree_ssbo = StorageBuffer<Octree::Node>(octree.getData(), 1);
     ComputeShader *compute = new ComputeShader("../res/compute.glsl");

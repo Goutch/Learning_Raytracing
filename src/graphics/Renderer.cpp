@@ -33,7 +33,7 @@ GLFWwindow *Renderer::init() {
     }
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     GL_Debug::init();
-
+    glViewport(0,0,WIDTH,HEIGHT);
     glEnable(GL_CULL_FACE);
 
 

@@ -3,15 +3,14 @@
 #include "vector"
 #include "queue"
 #include "glm/glm.hpp"
-
+#include "stack"
 using namespace glm;
 typedef std::uint32_t ui32;
 typedef std::uint16_t ui16;
 typedef std::uint8_t ui8;
-
+#define MAX_DEPTH 8
 #define LEAF_FLAG 0x10000000
 #define VALUE_MASK 0xEFFFFFFF
-#define ROOT 8
 #define RIGHT 4
 #define TOP 2
 #define BACK 1
@@ -30,10 +29,9 @@ enum NODE_TYPE {
 class Octree {
 public:
     struct Node {
-        ui32 node_type;
         ui32 children[8];
 
-        Node(ui32 material, ui8 node_type) : node_type(node_type) {
+        Node(ui32 material)  {
             for (int i = 0; i < 8; ++i) {
                 children[i] = material;
             }
@@ -41,13 +39,14 @@ public:
     };
 
 private:
-    const ui32 MAX_DEPTH = 8;
+    ui32 index_stack[MAX_DEPTH]={0,0,0,0,0,0,0,0};
+    ui8 position_stack[MAX_DEPTH]={0,0,0,0,0,0,0,0};
     std::vector<Octree::Node> data;
-
-    void clearAndReplace(ui32 value, ui32 i, ui32 parent);
-
+    ui8 last_node_position;
+    void clearAndReplace(ui32 material,ui32 depth);
+    void remove(ui32 depth);
     bool isLeaf(ui32 i);
-
+    bool combine(ui32 depth);
 public:
     Octree(ui32 default_value);
 
@@ -64,4 +63,5 @@ public:
     ui32 setTree(ui32 node);
 
 
+    void optimize();
 };

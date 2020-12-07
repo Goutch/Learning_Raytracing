@@ -2,7 +2,7 @@
 #define RIGHT 4
 #define TOP 2
 #define BACK 1
-#define MAX_STEP 64
+#define MAX_STEP 32
 #define MAX_DIST 3.0
 #define CHUNK_SIZE 256
 #define MAX_DEPTH 8
@@ -11,7 +11,6 @@ const uint VALUE_MASK =0xEFFFFFFF;
 
 
 struct Node{
-    uint node_type;
     uint children[8];
 };
 
@@ -97,14 +96,7 @@ vec3 getBoxDistances(vec3 o, vec3 d, vec3 box_position, vec3 box_radius, ivec3 d
 
     return ts;
 }
-int getChild(vec3 position, vec3 octree_position, out ivec3 child_position)
-{
-    child_position=ivec3(
-    int(position.x >= octree_position.x),
-    int(position.y >= octree_position.y),
-    int(position.z >= octree_position.z));
-    return (child_position.x * RIGHT) + (child_position.y * TOP) + (child_position.z* BACK);
-}
+
 //find closest t to bounding box
 //decend the octree to the closest voxel of the found t
 //if voxel is not empty juste return its color
@@ -131,28 +123,30 @@ vec4 march(vec3 o, vec3 d)
         distances=getBoxDistances(o, d, vec3(0, 0, 0), vec3(sizeAt(0)/2.), -d_axis, min_dist_index);
         t=distances[min_dist_index];
     }
-
-
-    for (int i=0;i<MAX_STEP;i++)
+    vec3 ray_position=o+(d*t);
+    int i=0;
+    for (i=0;i<MAX_STEP;i++)
     {
         //if did not hit anything
         if(t>=MAX_DIST)break;
-        if (i==MAX_STEP-1)
-        {
-            return vec4(0., 0., 0., 1.);
-        }
         //Find the closest leaf in current octree
-        while (!isLeaf(index_stack[depth]))
+        ivec3 child_position;
+        for(depth;depth<=MAX_DEPTH;depth++)
         {
-            ivec3 child_position;
-            int child = getChild(o+(d*t),  position_stack[depth], child_position);
+            if(isLeaf(index_stack[depth]))
+                break;
+            child_position=ivec3(
+            int(ray_position.x >=position_stack[depth].x),
+            int(ray_position.y >=position_stack[depth].y),
+            int(ray_position.z >=position_stack[depth].z));
+            int child = (child_position.x * RIGHT) + (child_position.y * TOP) + (child_position.z* BACK);
             child_type_stack[depth]=child;
-            depth++;
-            index_stack[depth]=octree[index_stack[depth-1]].children[child];
 
-            float radius=sizeAt(depth)/2.;
+            index_stack[depth+1]=octree[index_stack[depth]].children[child];
 
-            position_stack[depth] = position_stack[depth-1] + ((child_position)*radius) + ((child_position-1)*radius);
+            float radius=sizeAt(depth+1)/2.;
+
+            position_stack[depth+1] = position_stack[depth] + ((child_position)*radius) + ((child_position-1)*radius);
         }
 
         //if current leaf is not empty return its color
@@ -168,7 +162,7 @@ vec4 march(vec3 o, vec3 d)
         //PROBLEM SECOND TIME COMMING HERE AT i==1 t IS NOW MAX_DIST
 
         t=distances[min_dist_index];
-
+        ray_position=o+(d*t);
 
 
         ivec3 move_dir = ivec3(0);
@@ -176,7 +170,7 @@ vec4 march(vec3 o, vec3 d)
 
         bool out_of_bound=false;
         bool can_advance;
-        ivec3 child_position;
+
         //find common parent
         do
         {
@@ -215,6 +209,7 @@ vec4 march(vec3 o, vec3 d)
         position_stack[depth]=position_stack[depth-1]+((child_position)*sizeAt(depth+1)) + ((child_position-1)*sizeAt(depth+1));
 
     }
+    return vec4(i/float(MAX_STEP),i/float(MAX_STEP),i/float(MAX_STEP),1.);
     return vec4(1., 1., 1., 1.);
 }
 
