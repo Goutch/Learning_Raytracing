@@ -16,8 +16,9 @@ include_directories("dependencies/FastNoise")
 add_subdirectory("dependencies/FastNoise")
 include_directories("src")
 
-
-
+include_directories("dependencies/stb")
+add_subdirectory(dependencies/stb/)
+include_directories(dependencies/stb/)
 set(GL_FILES
          )
 
@@ -40,4 +41,4 @@ add_executable (${PROJECT_NAME}
         src/FastNoise.cpp
         src/FastNoise.h)
 
-target_link_libraries(${PROJECT_NAME} glm glfw glad FastNoise)
+target_link_libraries(${PROJECT_NAME} glm glfw glad FastNoise stb)

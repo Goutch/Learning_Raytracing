@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <string>
 
 class Texture {
 public:
@@ -19,7 +20,7 @@ public:
     Texture();
 
     ~Texture();
-
+    void load(std::string path);
     void setData(void *data, int width, int height, TEXTURE_TYPE texture_type);
 
     void bind(unsigned int slot=0) const;
