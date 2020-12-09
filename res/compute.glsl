@@ -2,12 +2,15 @@
 #define RIGHT 4
 #define TOP 2
 #define BACK 1
-#define MAX_STEP 128
-#define MAX_DIST 16.0
-#define AO_MAX_DIST 0.1
+
+#define MAX_DIST 256
+#define AO_MAX_DIST 0.3
+#define NB_AO_RAY 2
 #define CHUNK_SIZE 256
-#define MAX_DEPTH 8
+#define MAX_STEP CHUNK_SIZE/4
+#define MAX_DEPTH 10
 #define AMBIENT_LIGHT 0.2
+#define GOLDEN_RATIO 1.61803398875
 const uint LEAF_FLAG= 0x10000000;
 const uint VALUE_MASK =0xEFFFFFFF;
 
@@ -17,34 +20,28 @@ struct Node{
 };
 
 layout(local_size_x = 32, local_size_y = 32) in;
-layout(rgba32f, binding = 0) uniform image2D img_output;
-layout(std430, binding = 1) buffer Nodes_input
+layout(rgba32f, binding = 0) uniform image2D color_output;
+layout(rgba32f, binding = 1) uniform image2D normal_output;
+layout(binding = 2) uniform sampler2D noise_texture;
+layout(std430, binding = 0) buffer Nodes_input
 {
     Node octree[];
 };
 
-layout(std430, binding = 2) buffer Materials_input
+layout(std430, binding = 1) buffer Materials_input
 {
     vec4 materials[];
 };
 uniform vec2 resolution;
-uniform mat4 view_rotation;
-uniform vec4 view_position;
+uniform mat4 view_transform;
+
 uniform float voxels_per_units;
 uniform float time;
-uniform sampler2D noise_texture;
-uint index_stack[MAX_DEPTH]={
-0, 0, 0, 0, 0, 0, 0, 0
-};
-int child_type_stack[MAX_DEPTH-1]={
-0, 0, 0, 0, 0, 0, 0
-};
-vec3 position_stack[MAX_DEPTH]={
-vec3(0, 0, 0), vec3(0, 0, 0),
-vec3(0, 0, 0), vec3(0, 0, 0),
-vec3(0, 0, 0), vec3(0, 0, 0),
-vec3(0, 0, 0), vec3(0, 0, 0)
-};
+
+
+uint index_stack[MAX_DEPTH];
+int child_type_stack[MAX_DEPTH-1];
+vec3 position_stack[MAX_DEPTH];
 int depth=0;
 
 bool isLeaf(uint node_index)
@@ -65,7 +62,7 @@ bool isInside(vec3 p, vec3 box_position, vec3 box_radius)
     vec3 q = abs(p-box_position) - box_radius;
     return 0.>length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
-vec3 getBoxDistances(vec3 o, vec3 d, vec3 box_position, vec3 box_radius,float max_dist, ivec3 d_axis, out int min_index)
+vec3 getBoxDistances(vec3 o, vec3 d, vec3 box_position, vec3 box_radius, float max_dist, ivec3 d_axis, out int min_index)
 {
     min_index=-1;
     vec3 min=box_position-box_radius;
@@ -109,10 +106,14 @@ vec3 getBoxDistances(vec3 o, vec3 d, vec3 box_position, vec3 box_radius,float ma
 //pop to find common parent
 //ounce found, go to child of common parent that contain next voxel.
 //repeat
-vec4 trace(vec3 o, vec3 d,float max_distance, out float t, out vec3 normal)
+vec4 trace(vec3 o, vec3 d, float max_distance, out float t, out vec3 normal)
 {
     t=0.;
     depth=0;
+
+    position_stack[0]=vec3(0.,0.,0.);
+    index_stack[0]=0;
+    child_type_stack[0]=0;
     //Init variables
     if (abs(d.x)<0.00001)d.x=0.00001;
     if (abs(d.y)<0.00001)d.y=0.00001;
@@ -129,7 +130,7 @@ vec4 trace(vec3 o, vec3 d,float max_distance, out float t, out vec3 normal)
     //Get the t closest to chunk
     if (!isInside(o, vec3(0., 0., 0.), vec3(sizeAt(0)/2.)))
     {
-        distances=getBoxDistances(o, d, vec3(0, 0, 0), vec3(sizeAt(0)/2.),max_distance, -d_axis, min_dist_index);
+        distances=getBoxDistances(o, d, vec3(0, 0, 0), vec3(sizeAt(0)/2.), max_distance, -d_axis, min_dist_index);
         t=distances[min_dist_index];
         move_dir[min_dist_index]=d_axis[min_dist_index];
     }
@@ -177,7 +178,7 @@ vec4 trace(vec3 o, vec3 d,float max_distance, out float t, out vec3 normal)
         }
         //Else find next t
 
-        distances=getBoxDistances(o, d, position, vec3(radius),max_distance, d_axis, min_dist_index);
+        distances=getBoxDistances(o, d, position, vec3(radius), max_distance, d_axis, min_dist_index);
 
         t=distances[min_dist_index];
         ray_position=o+(d*t);
@@ -239,23 +240,26 @@ void main() {
     ivec2 pixel_coords = ivec2(id.xy);
     vec2 uv=id.xy/resolution.xy;
     uv-=0.5;
-    vec4 dir= vec4(uv.x, uv.y, 1., 0.);
+    uv*=1.3;
+    vec3 dir= vec3(uv.x, uv.y, 1.);
     dir=normalize(dir);
-    dir=view_rotation*dir;
+    dir=mat3(view_transform)*dir;
+
+    vec3 view_position=view_transform[3].xyz;
 
     float t;
     vec3 normal;
-    vec4 color=trace(view_position.xyz, dir.xyz,MAX_DIST, t, normal);
+    vec4 color=trace(view_position.xyz, dir.xyz, MAX_DIST, t, normal);
     if (t<MAX_DIST)
     {
 
-        vec3 hit_position=view_position.xyz+(dir.xyz*(t-0.00001));
+         vec3 hit_position=view_position.xyz+(dir.xyz*(t-0.00001));
         vec3 shadow_hit_normal;
-        vec3 to_light_dir=vec3(cos(time*0.0001)*0.5, sin(time*0.0001), -0.3);
+        vec3 to_light_dir=vec3(cos(1.)*0.5, sin(1.), -0.3);
 
         if (to_light_dir.y>=0.)
         {
-            trace(hit_position, normalize(to_light_dir),MAX_DIST, t, shadow_hit_normal);
+            trace(hit_position, normalize(to_light_dir), MAX_DIST, t, shadow_hit_normal);
             if (t<MAX_DIST)
             {
                 color.rgb*=AMBIENT_LIGHT;
@@ -269,12 +273,27 @@ void main() {
         {
             color.rgb*=AMBIENT_LIGHT;
         }
-        vec3 ao_hit_normal;
-        vec3 ao_ray_dir=normal+((texture(noise_texture, mod(uv+(time*0.01), 1.))-0.5)*2).rgb;
-        trace(hit_position, normalize(ao_ray_dir),AO_MAX_DIST, t, ao_hit_normal);
-        color-=1.-t/AO_MAX_DIST;
+        float ao=float(NB_AO_RAY);
+        for (int i=0;i<NB_AO_RAY;i++)
+        {
+            vec3 ao_hit_normal;
+            vec2 uv_x=mod((i/NB_AO_RAY)+(mod(time, 100.)*GOLDEN_RATIO)+uv, 1.);
+            vec2 uv_y=mod((i/NB_AO_RAY)+(mod(time, 100.)*GOLDEN_RATIO)+uv+0.33, 1.);
+            vec2 uv_z=mod((i/NB_AO_RAY)+(mod(time, 100.)*GOLDEN_RATIO)+uv+0.66, 1.);
+            vec3 noise=vec3(
+            texture(noise_texture, uv_x).r,
+            texture(noise_texture, uv_y).r,
+            texture(noise_texture, uv_z).r);
+
+            vec3 ao_ray_dir=normalize(normal+(((noise-0.5)*2).rgb));
+            trace(hit_position, normalize(ao_ray_dir), AO_MAX_DIST, t, ao_hit_normal);
+
+            ao-=(-0.1*pow(11, t/AO_MAX_DIST))+1.1;
+        }
+
+        color*=max(0.5,(ao/float(NB_AO_RAY)));
     }
-
-
-    imageStore(img_output, pixel_coords, color);
+    imageStore(color_output, pixel_coords,color);
+    //imageStore(color_output, pixel_coords,(imageLoad(color_output,pixel_coords)*0.5)+(color*0.5));
+    imageStore(normal_output, pixel_coords,vec4(abs(normal),1.));
 }

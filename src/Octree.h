@@ -39,8 +39,8 @@ public:
     };
 
 private:
-    ui32 index_stack[MAX_DEPTH]={0,0,0,0,0,0,0,0};
-    ui8 position_stack[MAX_DEPTH]={0,0,0,0,0,0,0,0};
+    ui32 index_stack[MAX_DEPTH];
+    ui8 position_stack[MAX_DEPTH];
     std::vector<Octree::Node> data;
     ui8 last_node_position;
     void clearAndReplace(ui32 material,ui32 depth);

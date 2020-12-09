@@ -6,6 +6,7 @@
 
 Octree::Octree(ui32 default_value) {
     data.emplace_back(setLeaf(default_value));
+    index_stack[0] = 0;
 }
 
 void Octree::optimize() {

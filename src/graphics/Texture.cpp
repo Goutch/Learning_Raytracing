@@ -33,7 +33,6 @@ void Texture::setData(void *data, int width, int height, Texture::TEXTURE_TYPE t
         }
         case TEXTURE_TYPE::RGBA32F: {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, data);
-            glBindImageTexture(0, texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
             break;
         }
         case TEXTURE_TYPE::DEPTH32: {
@@ -61,12 +60,13 @@ void Texture::load(std::string path) {
 void Texture::bind(unsigned int slot) const {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, texture_id);
-
+    glBindImageTexture(slot, texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 }
 
 void Texture::unbind(unsigned int slot) const {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, 0);
+    glBindImageTexture(slot, texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 }
 
 
