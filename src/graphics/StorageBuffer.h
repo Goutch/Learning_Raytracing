@@ -2,7 +2,7 @@
 
 //https://www.geeks3d.com/20140704/tutorial-introduction-to-opengl-4-3-shader-storage-buffers-objects-ssbo-demo/
 #include "vector"
-#include "Octree.h"
+#include "PureOctree.h"
 #include "glad/glad.h"
 #include "vector"
 template <class T>

@@ -6,9 +6,8 @@
 #define MAX_DIST 256
 #define AO_MAX_DIST 0.3
 #define NB_AO_RAY 2
-#define CHUNK_SIZE 256
-#define MAX_STEP CHUNK_SIZE/4
-#define MAX_DEPTH 10
+#define MAX_STEP 64
+#define DEPTH_LIMIT 10
 #define AMBIENT_LIGHT 0.2
 #define GOLDEN_RATIO 1.61803398875
 const uint LEAF_FLAG= 0x10000000;
@@ -39,9 +38,9 @@ uniform float voxels_per_units;
 uniform float time;
 
 
-uint index_stack[MAX_DEPTH];
-int child_type_stack[MAX_DEPTH-1];
-vec3 position_stack[MAX_DEPTH];
+uint index_stack[DEPTH_LIMIT+1];
+int child_type_stack[DEPTH_LIMIT];
+vec3 position_stack[DEPTH_LIMIT];
 int depth=0;
 
 bool isLeaf(uint node_index)
@@ -55,7 +54,7 @@ uint getValue(uint node_index)
 }
 float sizeAt(int depth)
 {
-    return (1<<(MAX_DEPTH-depth))/voxels_per_units;
+    return (1<<(DEPTH_LIMIT-depth))/voxels_per_units;
 }
 bool isInside(vec3 p, vec3 box_position, vec3 box_radius)
 {
@@ -136,10 +135,9 @@ vec4 trace(vec3 o, vec3 d, float max_distance, out float t, out vec3 normal)
     }
     vec3 ray_position=o+(d*t);
     int i=0;
-
+    int j=0;
     for (i=0;i<MAX_STEP;i++)
     {
-
         //if did not hit anything
         if (t>=max_distance)break;
         //Find the closest leaf in current octree
@@ -148,8 +146,9 @@ vec4 trace(vec3 o, vec3 d, float max_distance, out float t, out vec3 normal)
         uint parent;
         uint current;
         float radius;
-        for (depth;depth<MAX_DEPTH;depth++)
+        for (depth;depth<=DEPTH_LIMIT;depth++)
         {
+            j++;
             current=index_stack[depth];
             position=position_stack[depth];
             radius=sizeAt(depth+1)/2.;
@@ -193,6 +192,7 @@ vec4 trace(vec3 o, vec3 d, float max_distance, out float t, out vec3 normal)
         //find common parent
         do
         {
+            j++;
             if (depth==0)
             {
                 out_of_bound=true;
@@ -231,16 +231,21 @@ vec4 trace(vec3 o, vec3 d, float max_distance, out float t, out vec3 normal)
     }
     normal=vec3(0, 0, 0);
     t=max_distance;
+    return vec4(j/float(MAX_STEP), j/float(MAX_STEP), j/float(MAX_STEP), 1.);
     return vec4(i/float(MAX_STEP), i/float(MAX_STEP), i/float(MAX_STEP), 1.);
     return vec4(1., 1., 1., 1.);
 }
 
 void main() {
     uvec3 id=gl_WorkGroupID * gl_WorkGroupSize + gl_LocalInvocationID;
+
     ivec2 pixel_coords = ivec2(id.xy);
     vec2 uv=id.xy/resolution.xy;
     uv-=0.5;
     uv*=1.3;
+    float aspect_ratio=resolution.y/resolution.x;
+    uv.y*=aspect_ratio;
+
     vec3 dir= vec3(uv.x, uv.y, 1.);
     dir=normalize(dir);
     dir=mat3(view_transform)*dir;
@@ -252,17 +257,34 @@ void main() {
     vec4 color=trace(view_position.xyz, dir.xyz, MAX_DIST, t, normal);
     if (t<MAX_DIST)
     {
-
          vec3 hit_position=view_position.xyz+(dir.xyz*(t-0.00001));
         vec3 shadow_hit_normal;
         vec3 to_light_dir=vec3(cos(1.)*0.5, sin(1.), -0.3);
-
         if (to_light_dir.y>=0.)
         {
             trace(hit_position, normalize(to_light_dir), MAX_DIST, t, shadow_hit_normal);
             if (t<MAX_DIST)
             {
                 color.rgb*=AMBIENT_LIGHT;
+                float ao=float(NB_AO_RAY);
+                for (int i=0;i<NB_AO_RAY;i++)
+                {
+                    vec3 ao_hit_normal;
+                    vec2 uv_x=mod((i/NB_AO_RAY)+(mod(time, 100.)*GOLDEN_RATIO)+uv, 1.);
+                    vec2 uv_y=mod((i/NB_AO_RAY)+(mod(time, 100.)*GOLDEN_RATIO)+uv+0.33, 1.);
+                    vec2 uv_z=mod((i/NB_AO_RAY)+(mod(time, 100.)*GOLDEN_RATIO)+uv+0.66, 1.);
+                    vec3 noise=vec3(
+                    texture(noise_texture, uv_x).r,
+                    texture(noise_texture, uv_y).r,
+                    texture(noise_texture, uv_z).r);
+
+                    vec3 ao_ray_dir=normalize(normal+(((noise-0.5)*2).rgb));
+                    trace(hit_position, normalize(ao_ray_dir), AO_MAX_DIST, t, ao_hit_normal);
+
+                    ao-=(-0.1*pow(11, t/AO_MAX_DIST))+1.1;
+                }
+
+                color*=max(0.5,(ao/float(NB_AO_RAY)));
             }
             else
             {
@@ -273,27 +295,9 @@ void main() {
         {
             color.rgb*=AMBIENT_LIGHT;
         }
-        float ao=float(NB_AO_RAY);
-        for (int i=0;i<NB_AO_RAY;i++)
-        {
-            vec3 ao_hit_normal;
-            vec2 uv_x=mod((i/NB_AO_RAY)+(mod(time, 100.)*GOLDEN_RATIO)+uv, 1.);
-            vec2 uv_y=mod((i/NB_AO_RAY)+(mod(time, 100.)*GOLDEN_RATIO)+uv+0.33, 1.);
-            vec2 uv_z=mod((i/NB_AO_RAY)+(mod(time, 100.)*GOLDEN_RATIO)+uv+0.66, 1.);
-            vec3 noise=vec3(
-            texture(noise_texture, uv_x).r,
-            texture(noise_texture, uv_y).r,
-            texture(noise_texture, uv_z).r);
 
-            vec3 ao_ray_dir=normalize(normal+(((noise-0.5)*2).rgb));
-            trace(hit_position, normalize(ao_ray_dir), AO_MAX_DIST, t, ao_hit_normal);
-
-            ao-=(-0.1*pow(11, t/AO_MAX_DIST))+1.1;
-        }
-
-        color*=max(0.5,(ao/float(NB_AO_RAY)));
     }
     imageStore(color_output, pixel_coords,color);
-    //imageStore(color_output, pixel_coords,(imageLoad(color_output,pixel_coords)*0.5)+(color*0.5));
+
     imageStore(normal_output, pixel_coords,vec4(abs(normal),1.));
 }

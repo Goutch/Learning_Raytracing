@@ -19,6 +19,6 @@ class ComputeShader: public ShaderProgram {
 public:
     ComputeShader(std::string path);
     void setGroups(int x,int y,int z,int size_x,int size_y,int size_z);
-    void execute();
+    void dispatch();
 };
 

@@ -38,7 +38,7 @@ void ComputeShader::setGroups(int x, int y, int z, int size_x, int size_y, int s
 
 
 
-void ComputeShader::execute() {
+void ComputeShader::dispatch() {
     glDispatchCompute((GLuint)work_group_x/32, (GLuint)work_group_y/32,(GLuint)work_group_z);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
