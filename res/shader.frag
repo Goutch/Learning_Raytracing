@@ -10,8 +10,8 @@ const float gamma=1.;
 void main()
 {
     vec4 center_color = texture2D(color_texture, uv);
-    vec4 center_normal=texture2D(normal_texture, uv);
-    /*vec4 color = vec4(0., 0., 0., 1.);
+    /*vec4 center_normal=texture2D(normal_texture, uv);
+    vec4 color = vec4(0., 0., 0., 1.);
     if (length(center_normal)>0.01)
     {
         float total = 0.0;

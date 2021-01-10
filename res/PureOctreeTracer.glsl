@@ -266,7 +266,7 @@ void main() {
             if (t<MAX_DIST)
             {
                 color.rgb*=AMBIENT_LIGHT;
-                float ao=float(NB_AO_RAY);
+                /*float ao=float(NB_AO_RAY);
                 for (int i=0;i<NB_AO_RAY;i++)
                 {
                     vec3 ao_hit_normal;
@@ -284,7 +284,7 @@ void main() {
                     ao-=(-0.1*pow(11, t/AO_MAX_DIST))+1.1;
                 }
 
-                color*=max(0.5,(ao/float(NB_AO_RAY)));
+                color*=max(0.5,(ao/float(NB_AO_RAY)));*/
             }
             else
             {
