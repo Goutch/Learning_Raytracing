@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 set(CMAKE_CXX_STANDARD 17)
 
-project(Ray_Traced_Voxel)
+project(SVO_Raytracer)
 
 include_directories("dependencies/glm")
 add_subdirectory("dependencies/glm")

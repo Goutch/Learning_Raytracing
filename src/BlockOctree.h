@@ -5,6 +5,7 @@
 #include "list"
 #define MAX_DEPTH 8
 #define BLOCK_SIZE 16
+#include "glm/glm.hpp"
 typedef std::uint32_t ui32;
 typedef std::uint16_t ui16;
 typedef std::uint8_t ui8;
