@@ -2,7 +2,7 @@
 
 This project is a **PROTOTYPE** of a sparse voxel octree Ray tracer with opengl compute shaders
 
-It is used to compare multiple sparse voxel octree data structures implementation and their performances implications.
+It is used to compare multiple sparse voxel octree data structures implementation and their performances implications in ray tracing.
 
 The rendering is meant to be ported to [HellbenderEngine](https://github.com/Goutch/HellbenderEngine) in the future. 
 
