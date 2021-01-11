@@ -10,15 +10,15 @@ class StorageBuffer {
     unsigned int ssbo_id;
     unsigned int bind_index;
 public:
-    void StorageBuffer::bind() {
+    void bind() {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_id);
     };
 
-    void StorageBuffer::unbind() {
+    void unbind() {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     };
 
-    StorageBuffer::~StorageBuffer() {
+    ~StorageBuffer() {
         glDeleteBuffers(1,&ssbo_id);
     };
     void setData(std::vector<T>& data)
