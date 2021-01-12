@@ -85,7 +85,7 @@ vec3 getBoxDistances(vec3 o, vec3 d, vec3 box_position, vec3 box_radius, float m
         ts.y=max_dist;
     }
     p=o+(d*ts.z);
-    if (ts.z<0||
+    if (ts.z<0 ||
     p.y < min.y || p.y > max.y||
     p.x < min.x || p.x > max.x)
     {

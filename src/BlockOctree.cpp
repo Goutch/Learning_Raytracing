@@ -59,8 +59,10 @@ ui32 BlockOctree::getBlockID(ui32 block_node_id) {
         if(free_blocks.empty())
         {
             nodes[block_node_id].child_pointer = blocks.size();
+            block_parents.emplace_back(block_node_id);
             mat_count.emplace_back();
             blocks.emplace_back();
+
         } else{
             nodes[block_node_id].child_pointer = free_blocks.front();
             free_blocks.pop_front();

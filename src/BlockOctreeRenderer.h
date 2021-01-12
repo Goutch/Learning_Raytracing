@@ -103,12 +103,13 @@ namespace BlockOctreeRenderer {
         StorageBuffer octree_ssbo = StorageBuffer<BlockOctree::Node>(octree.getNodes(), 0);
         StorageBuffer materials_ssbo = StorageBuffer<vec4>(voxel_materials, 1);
 
-        ComputeShader *compute = new ComputeShader("../res/PureOctreeTracer.glsl");
+        ComputeShader *compute = new ComputeShader("../res/BlockOctreeTracer.glsl");
 
         compute->bind();
         compute->setGroups(WIDTH, HEIGHT, 1, 1, 1, 1);
         compute->setUniform("voxels_per_units", voxels_per_units);
         compute->setUniform("resolution", vec2(WIDTH, HEIGHT));
+        compute->setUniform("chunk_size",static_cast<int>(octree.getSize()));
         compute->setUniform("color_output", 0);
         compute->setUniform("normal_output", 1);
         compute->setUniform("noise_texture", 2);
