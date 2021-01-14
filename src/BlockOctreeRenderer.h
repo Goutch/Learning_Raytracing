@@ -15,7 +15,7 @@
 #include <graphics/ComputeShader.h>
 #include "graphics/Renderer.h"
 #include "graphics/StorageBuffer.h"
-
+#include "graphics/Image.h"
 #include "Clock.h"
 #include "BlockOctree.h"
 #include "NoiseGen.h"
@@ -90,9 +90,9 @@ namespace BlockOctreeRenderer {
 
         Camera camera(window);
 
-        Texture *color_buffer = new Texture();
+        Image *color_buffer = new Image();
         color_buffer->setData(nullptr, WIDTH, HEIGHT, Texture::RGBA32F);
-        Texture *normal_buffer = new Texture();
+        Image *normal_buffer = new Image();
         //normal_buffer->setData(nullptr, WIDTH, HEIGHT, Texture::RGBA32F);
         Texture *noise_texture = new Texture();
         noise_texture->load("../res/noise.png");
@@ -154,7 +154,7 @@ namespace BlockOctreeRenderer {
             glfwSwapBuffers(window);
             delta = delta_time.ns() / SECONDS_TO_NANOSECOND;
 
-            printFPS(delta);
+            //printFPS(delta);
             delta_time.reset();
         }
         delete shader;

@@ -12,7 +12,7 @@ public:
         R8,
         DEPTH32,
     };
-private:
+protected:
     unsigned int texture_id;
     int width=1;
     int height=1;
@@ -23,9 +23,9 @@ public:
     void load(std::string path);
     void setData(void *data, int width, int height, TEXTURE_TYPE texture_type);
 
-    void bind(unsigned int slot=0) const;
+    virtual void bind(unsigned int slot=0) const;
 
-    void unbind(unsigned int slot=0) const;
+    virtual void unbind(unsigned int slot=0) const;
 
     unsigned int getId();
 };

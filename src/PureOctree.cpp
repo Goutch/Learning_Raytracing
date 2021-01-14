@@ -1,6 +1,3 @@
-//
-// Created by User on 29-Jul.-2020.
-//
 
 #include "PureOctree.h"
 
