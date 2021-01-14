@@ -36,6 +36,6 @@ add_executable (${PROJECT_NAME}
         src/utils/FastNoise.cpp
         src/Camera.cpp
         src/BlockOctree.cpp
-        src/LODOctree.cpp src/PureOctreeRenderer.h src/BlockOctreeRenderer.h src/graphics/Image.cpp src/graphics/Image.h)
+        src/LODtree.cpp src/PureOctreeRenderer.h src/BlockOctreeRenderer.h src/graphics/Image.cpp src/graphics/Image.h)
 
 target_link_libraries(${PROJECT_NAME} glm glfw glad FastNoise stb)

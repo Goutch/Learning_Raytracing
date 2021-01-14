@@ -59,6 +59,7 @@ vec3 getBoxDistances(vec3 o, vec3 d, vec3 box_position, vec3 box_radius, float m
 vec4 trace(vec3 o, vec3 d)
 {
     float t=0.;
+
     //make sur no divisions by 0
     if (abs(d.x)<0.00001)d.x=0.00001;
     if (abs(d.y)<0.00001)d.y=0.00001;
@@ -73,6 +74,16 @@ vec4 trace(vec3 o, vec3 d)
     {
         int min_dist_index;
         t=getBoxDistances(o, d, vec3(0, 0, 0), vec3(chunk_size/2.), MAX_DIST, -axis_directions, min_dist_index)[min_dist_index];
+    }
+    uint current=0;
+    int depth=0;
+    while(true)
+    {
+        while(true);
+        {
+            depth++;
+
+        }
     }
     return vec4(t/MAX_DIST,0.,0.,1.);
 
