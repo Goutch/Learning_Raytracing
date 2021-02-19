@@ -1,7 +1,11 @@
 #version 430
 
+#define RIGHT 4
+#define TOP 2
+#define BACK 1
 #define BLOCK_SIZE 16
-#define MAX_DIST 64.
+#define DEPTH_LIMIT 10
+#define MAX_DIST 64
 layout(local_size_x = 32, local_size_y = 32) in;
 struct Node{
     bool is_leaf;
@@ -70,22 +74,62 @@ vec4 trace(vec3 o, vec3 d)
     d.y>0?1:-1,
     d.z>0?1:-1);
     //figure out if the origin is outside the chunk.
-    if(!isInside(o,vec3(0.,0.,0.),vec3(chunk_size/2.)))
+    if (!isInside(o, vec3(0., 0., 0.), vec3(chunk_size/2.)))
     {
         int min_dist_index;
         t=getBoxDistances(o, d, vec3(0, 0, 0), vec3(chunk_size/2.), MAX_DIST, -axis_directions, min_dist_index)[min_dist_index];
     }
-    uint current=0;
-    int depth=0;
-    while(true)
-    {
-        while(true);
-        {
-            depth++;
 
+    int depth=0;
+    uint index_stack[DEPTH_LIMIT];
+    vec3 position_stack[DEPTH_LIMIT];
+    int size_stack[DEPTH_LIMIT];
+
+    while (true){
+        size_stack[i]=size_stack[i-1]/2;
+
+        index_stack[depth]=0;
+        //octree position in space
+        position_stack[depth]=vec3(0, 0, 0);
+        //**********PUSH*************
+        //find current leaf
+        //fill the stacks
+        for (int i=0;i<100;i++)
+        {
+            //if did not hit anything
+            if (t>=max_distance)break;
+
+            vec3 ray_position=o+(d*t);
+            //Find the closest leaf in current octree
+            for (depth;depth<=DEPTH_LIMIT;depth++)
+            {
+                if (nodes[index_stack[depth]].is_leaf)
+                break;
+
+                ivec3 child_position= ivec3(
+                int(ray_position.x >=position.x),
+                int(ray_position.y >=position.y),
+                int(ray_position.z >=position.z));
+                uint child = (child_position.x * RIGHT) + (child_position.z * TOP) + (child_position.z * BACK);
+
+                index_stack[depth+1]=nodes[nodes[index_stack[depth]].child_pointer+child];
+                position_stack[depth+1]=
+                position_stack[depth]+
+                (child_position*size_stack[depth+1]) +
+                ((child_position-1)*size_stack[depth+1]);
+            }
         }
+        //check leaf material
+        if (materials[nodes[index_stack[depth]].child_pointer]!=0)
+        {
+            //node is not empty return color
+            break;
+        }
+        //**********ADVANCE*************
+
+        //**********POP*************
     }
-    return vec4(t/MAX_DIST,0.,0.,1.);
+    return vec4(t/MAX_DIST, 0., 0., 1.);
 
 }
 void main() {
@@ -99,6 +143,6 @@ void main() {
     vec3 dir= vec3(uv.x, uv.y, 1.);
     dir=normalize(dir);
     dir=mat3(view_transform)*dir;
-    vec4 pixel_color = trace(origin,dir);
+    vec4 pixel_color = trace(origin, dir);
     imageStore(color_output, pixel_coords, pixel_color);
 }

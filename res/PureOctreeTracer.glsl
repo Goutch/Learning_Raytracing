@@ -136,6 +136,7 @@ vec4 trace(vec3 o, vec3 d, float max_distance, out float t, out vec3 normal)
     vec3 ray_position=o+(d*t);
     int i=0;
     int j=0;
+    //**********PUSH*************
     for (i=0;i<MAX_STEP;i++)
     {
         //if did not hit anything
@@ -163,8 +164,10 @@ vec4 trace(vec3 o, vec3 d, float max_distance, out float t, out vec3 normal)
 
             child_type_stack[depth]=child;
             index_stack[depth+1]=octree[current].children[child];
-            position_stack[depth+1] = position + ((child_position)*radius) + ((child_position-1)*radius);
+            position_stack[depth+1] = position + (child_position*radius) + ((child_position-1)*radius);
         }
+
+        //**********ADVANCE*************
         current=index_stack[depth];
         position=position_stack[depth];
         radius=sizeAt(depth)/2.;
@@ -189,6 +192,7 @@ vec4 trace(vec3 o, vec3 d, float max_distance, out float t, out vec3 normal)
         bool out_of_bound=false;
         bool can_advance;
 
+        //**********POP*************
         //find common parent
         do
         {
